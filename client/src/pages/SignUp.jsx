@@ -30,7 +30,6 @@ const SignUp = () => {
       );
 
       if (res.data.success === false) {
-        // ✅ Check `res.data.success`, not `res.success`
         setError(res.data.message);
         setLoading(false);
         return;
