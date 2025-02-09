@@ -19,15 +19,11 @@ const SignUp = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/auth/signup",
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const res = await axios.post("/api/auth/signup", formData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (res.data.success === false) {
         setError(res.data.message);
@@ -79,7 +75,7 @@ const SignUp = () => {
       </form>
       <div className="flex gap-2 mt-5 mx-">
         <p>Have an account ?</p>
-        <Link to={"./sign-in"}>
+        <Link to="/sign-in">
           <span className="text-blue-700">Sign in</span>
         </Link>
       </div>
