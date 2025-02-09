@@ -1,7 +1,6 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { errorHandler } from "../utils/error.js";
 
 export const signup = async (req, res, next) => {
   try {
@@ -9,16 +8,19 @@ export const signup = async (req, res, next) => {
     if (!username || !email || !password) {
       return res
         .status(400)
-        .json({ success: false, message: "Enter all the fields" });
+        .json({ success: false, message: "Enter all fields" });
     }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
         .status(400)
         .json({ success: false, message: "Email already in use" });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
+
     await newUser.save();
     res
       .status(201)
@@ -29,25 +31,31 @@ export const signup = async (req, res, next) => {
 };
 
 export const login = async (req, res, next) => {
-  const { email, password } = req.body;
   try {
-    const validUser = await User.findOne({ email });
-    if (!validUser) return next(errorHandler(404, "User not found !"));
-    const validPassword = await bcrypt.compare(password, validUser.password);
-    if (!validPassword) return next(errorHandler(401, "Wrong Credential !"));
-    const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(req.body.password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
     });
-    const { password: pass, ...restOfData } = validUser._doc;
-    return res
+
+    res
       .cookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
-        maxAge: 60 * 60 * 1000,
       })
       .status(200)
-      .json(restOfData);
+      .json({
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        _id: user._id,
+      });
   } catch (error) {
     next(error);
   }
@@ -57,58 +65,48 @@ export const google = async (req, res, next) => {
   try {
     let user = await User.findOne({ email: req.body.email });
 
-    console.log("Google OAuth request body:", req.body); // ✅ Debugging line
-
     if (user) {
-      // Generate JWT token for existing user
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "7d",
       });
 
-      const { password, ...restOfData } = user._doc;
-
+      const { password, ...rest } = user._doc;
       return res
-        .cookie("access-token", token, {
+        .cookie("access_token", token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "Strict",
-          maxAge: 60 * 60 * 1000,
         })
         .status(200)
-        .json(restOfData);
+        .json(rest);
     }
 
-    // Generate a random password for new users
     const generatedPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
     const newUser = new User({
       username:
-        req.body.name.split(" ").join("").toLowerCase() +
+        req.body.name.replace(/\s/g, "").toLowerCase() +
         Math.random().toString(36).slice(-4),
       email: req.body.email,
       password: hashedPassword,
-      avatar: req.body.photo, // Corrected field name
+      avatar: req.body.avatar,
     });
 
     await newUser.save();
-
-    // Generate JWT token for new user
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "7d",
     });
 
-    const { password, ...restOfData } = newUser._doc;
-
+    const { password, ...rest } = newUser._doc;
     res
-      .cookie("access-token", token, {
+      .cookie("access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "Strict",
-        maxAge: 60 * 60 * 1000,
       })
       .status(201)
-      .json(restOfData);
+      .json(rest);
   } catch (error) {
     next(error);
   }

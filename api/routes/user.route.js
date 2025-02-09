@@ -1,7 +1,10 @@
 import express from "express";
-import { test } from "../controllers/user.controller.js";
+import { updateUser, deleteUser } from "../controllers/user.controller.js";
+import { verifyUser } from "../middlewares/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/test", test);
+router.put("/update", verifyUser, updateUser);
+router.delete("/delete", verifyUser, deleteUser);
 
 export default router;
