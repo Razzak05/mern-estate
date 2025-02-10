@@ -4,7 +4,7 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import Header from "./assets/Components/header";
+import Header from "./assets/Components/Header";
 import PrivateRoute from "../src/assets/Components/PrivateRoute";
 const App = () => {
   return (

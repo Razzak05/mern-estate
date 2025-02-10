@@ -1,11 +1,16 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import axios from "axios";
-import { signInSuccess } from "../redux/user/userSlice.js";
 import { useNavigate } from "react-router-dom";
+import {
+  updateUserStart,
+  updateUserSuccess,
+  updateUserFailure,
+  signInSuccess,
+} from "../redux/user/userSlice.js";
 
 const Profile = () => {
-  const { currentUser } = useSelector((state) => state.user);
+  const { currentUser, loading, error } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -18,8 +23,7 @@ const Profile = () => {
 
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(currentUser.avatar);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -36,8 +40,8 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      setError(null);
+      dispatch(updateUserStart());
+      setUpdateSuccess(false);
 
       const formDataToSend = new FormData();
       formDataToSend.append("username", formData.username);
@@ -55,13 +59,20 @@ const Profile = () => {
       });
 
       if (res.data) {
-        dispatch(signInSuccess(res.data));
-        setFile(null); // Reset file state after successful upload
+        dispatch(updateUserSuccess(res.data));
+        setFile(null);
+        setUpdateSuccess(true);
+        // Reset success message after 3 seconds
+        setTimeout(() => {
+          setUpdateSuccess(false);
+        }, 3000);
       }
-      setLoading(false);
     } catch (error) {
-      setError(error.response?.data?.message || "Something went wrong");
-      setLoading(false);
+      dispatch(
+        updateUserFailure(
+          error.response?.data?.message || "Something went wrong"
+        )
+      );
     }
   };
 
@@ -71,7 +82,7 @@ const Profile = () => {
       dispatch(signInSuccess(null));
       navigate("/sign-in");
     } catch (error) {
-      setError("Failed to delete account: " + error.message);
+      dispatch(updateUserFailure("Failed to delete account: " + error.message));
     }
   };
 
@@ -84,13 +95,19 @@ const Profile = () => {
     <div className="max-w-[500px] mx-auto">
       <h1 className="text-3xl font-semibold text-center my-7">Profile</h1>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <label htmlFor="avatar" className="cursor-pointer mx-auto">
-          <img
-            src={preview}
-            alt="profile"
-            className="rounded-full h-24 w-24 object-cover self-center mt-2"
-          />
-        </label>
+        <div className="flex flex-col items-center">
+          <label htmlFor="avatar" className="cursor-pointer">
+            <img
+              src={preview}
+              alt="profile"
+              className="rounded-full h-24 w-24 object-cover mt-2"
+            />
+          </label>
+          {updateSuccess && (
+            <p className="text-green-700 mt-2">Profile updated successfully!</p>
+          )}
+        </div>
+
         <input
           type="file"
           id="avatar"
