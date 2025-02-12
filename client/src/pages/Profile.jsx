@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   updateUserStart,
   updateUserSuccess,
@@ -86,9 +86,14 @@ const Profile = () => {
     }
   };
 
-  const handleLogout = () => {
-    dispatch(signInSuccess(null));
-    navigate("/sign-in");
+  const handleLogout = async () => {
+    try {
+      await axios.post("/api/auth/logout", {}, { withCredentials: true });
+      dispatch(signInSuccess(null)); // Clear Redux state
+      navigate("/sign-in"); // Redirect to login page
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
@@ -148,6 +153,12 @@ const Profile = () => {
         >
           {loading ? "Updating..." : "Update"}
         </button>
+        <Link
+          className="bg-green-700 text-white p-3 rounded-lg uppercase text-center hover:opacity-95"
+          to={"/create-listing"}
+        >
+          Create Listing
+        </Link>
         {error && <p className="text-red-600">{error}</p>}
       </form>
       <div className="flex justify-between mt-5">
