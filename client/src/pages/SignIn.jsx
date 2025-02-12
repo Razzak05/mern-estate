@@ -26,10 +26,11 @@ const SignIn = () => {
 
     try {
       dispatch(signInStart());
-      const res = await axios.post("/api/auth/signin", formData, {
+      const res = await axios.post("/api/auth/login", formData, {
         headers: {
           "Content-Type": "application/json",
         },
+        withCredentials: true,
       });
 
       if (res.data.success === false) {

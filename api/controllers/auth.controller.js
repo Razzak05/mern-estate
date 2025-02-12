@@ -1,30 +1,30 @@
+import jwt from "jsonwebtoken";
+
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { generateToken } from "../utils/token.js";
 
 export const signup = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) {
+    if (!username || !email || !password)
       return res
         .status(400)
-        .json({ success: false, message: "Enter all fields" });
-    }
+        .json({ success: false, message: "All fields are required" });
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
       return res
         .status(400)
         .json({ success: false, message: "Email already in use" });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
-
     await newUser.save();
+
     res
       .status(201)
-      .json({ success: true, message: "User signed up successfully" });
+      .json({ success: true, message: "User registered successfully" });
   } catch (error) {
     next(error);
   }
@@ -39,9 +39,7 @@ export const login = async (req, res, next) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = generateToken(user._id);
 
     res
       .cookie("access_token", token, {
